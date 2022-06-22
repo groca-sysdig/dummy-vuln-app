@@ -1,5 +1,38 @@
 pipeline {
- 
+agent {
+       kubernetes {
+           yaml """
+apiVersion: v1 
+kind: Pod 
+metadata: 
+    name: dind
+    annotations:
+      container.apparmor.security.beta.kubernetes.io/dind: unconfined
+      container.seccomp.security.alpha.kubernetes.io/dind: unconfined
+spec: 
+    containers: 
+      - name: dind
+        image: docker:dind
+        securityContext:
+          privileged: true
+        tty: true
+        volumeMounts:
+        - name: var-run
+          mountPath: /var/run
+      - name: jnlp
+        securityContext:
+          runAsUser: 0
+          fsGroup: 0
+        volumeMounts:
+        - name: var-run
+          mountPath: /var/run
+        
+    volumes:
+    - emptyDir: {}
+      name: var-run
+"""
+       }
+   } 
     parameters { 
         string(name: 'DOCKER_REPOSITORY', defaultValue: 'grocamador/dummy-demo', description: 'Name of the image to be built (e.g.: sysdiglabs/dummy-vuln-app)') 
     }
